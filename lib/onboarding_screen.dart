@@ -50,7 +50,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.dark,
+        value: SystemUiOverlayStyle.light,
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
