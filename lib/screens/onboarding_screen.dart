@@ -1,7 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'signup.dart';
+import 'signup_screen.dart';
+import 'package:onboardingtest/constants.dart';
 
 class OnboardingScreen extends StatefulWidget {
   @override
@@ -12,17 +13,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final int _numPages = 3;
   final PageController _pageController = PageController(initialPage: 0);
   int _currentPage = 0;
-
-  final kTitleStyle = TextStyle(
-    fontSize: 20.0,
-    color: Color(0XFF333333),
-    fontWeight: FontWeight.bold,
-  );
-
-  final kSubtitleStyle = TextStyle(
-    fontSize: 17.0,
-    color: Color(0XFF333333),
-  );
 
   List<Widget> _buildPageIndicator() {
     List<Widget> list = [];
@@ -70,8 +60,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   alignment: Alignment.centerRight,
                   child: FlatButton(
                     onPressed: () => {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => NewScreen())),
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SignupScreen())),
                     },
                     child: _currentPage != _numPages - 1
                         ? Text(
@@ -222,7 +214,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: GestureDetector(
                 onTap: () {
                   Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => NewScreen()));
+                      MaterialPageRoute(builder: (context) => SignupScreen()));
                 },
                 child: Center(
                   child: Padding(
