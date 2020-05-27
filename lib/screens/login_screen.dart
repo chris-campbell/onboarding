@@ -1,15 +1,64 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../widgets/control_text_field.dart';
+import 'package:flutter/services.dart';
 import '../widgets/round_social_button.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'signup_screen.dart';
 import 'package:onboardingtest/constants.dart';
 import 'setup_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class Login extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  static String id = 'login_screen';
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+
+
+  TextEditingController _emailController = TextEditingController();
+  TextEditingController _passwordController = TextEditingController();
+  FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
+  GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  bool _loggingIn = false;
+
+  _login() async {
+
+    setState(() {
+      _loggingIn = true;
+    });
+
+    _scaffoldKey.currentState.removeCurrentSnackBar();
+    _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text('Logging you in...'),));
+
+    try {
+      FirebaseUser _user = (await _firebaseAuth.signInWithEmailAndPassword(email: _emailController.text.trim(), password: _passwordController.text.trim())).user;
+      _scaffoldKey.currentState.removeCurrentSnackBar();
+      _scaffoldKey.currentState.showSnackBar(
+        SnackBar(content: Text('Login Successful'),),
+      );
+      Navigator.pushNamed(context, SetupScreen.id);
+    }
+
+    catch(e) {
+      _scaffoldKey.currentState.removeCurrentSnackBar();
+      _scaffoldKey.currentState.showSnackBar(
+        SnackBar(content: Text((e as PlatformException).message),),
+      );
+    } finally {
+      setState(() {
+        _loggingIn = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: Color(0xFF333333),
       body: Padding(
         padding: const EdgeInsets.all(40.0),
@@ -28,13 +77,42 @@ class Login extends StatelessWidget {
                     ),
                   ),
                 ),
-                ControlTextField(
-                  textType: TextInputType.emailAddress,
-                  hintText: 'example@domain.com',
-                  icon: Icon(
-                    Icons.email,
-                    color: Color(0xFFF0F456),
-                    size: 30.0,
+                Container(
+                  child: Material(
+                    color: Color(0xFF333333),
+                    child: TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      style: TextStyle(
+                        color: Color(0xFFEBEBEB),
+                        fontSize: 20.0,
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        focusedBorder: kFocusBorderStyle,
+                        enabledBorder: kEnabledBorderStyle,
+                        filled: true,
+                        fillColor: Color(0xFF333333),
+                        hintText: 'example@domain.com',
+                        hintStyle: TextStyle(
+                          fontSize: 21.0,
+                          color: Color(0xFF999999),
+                        ),
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 11.0),
+                          child: Icon(
+                            Icons.email,
+                            color: Color(0xFFF0F456),
+                            size: 30.0,
+                          ),
+                        ),
+                      ),
+                      onChanged: (value) {
+
+                      },
+                    ),
                   ),
                 ),
                 SizedBox(
@@ -43,7 +121,8 @@ class Login extends StatelessWidget {
                 Container(
                   child: Material(
                     color: Color(0xFF333333),
-                    child: TextFormField(
+                    child: TextField(
+                      controller: _passwordController,
                       obscureText: true,
                       style: TextStyle(
                         color: Color(0xFFEBEBEB),
@@ -71,8 +150,8 @@ class Login extends StatelessWidget {
                           ),
                         ),
                       ),
-                      validator: (value) {
-                        return value;
+                      onChanged: (value) {
+
                       },
                     ),
                   ),
@@ -88,11 +167,9 @@ class Login extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10.0),
                     ),
                     color: Color(0xFFF0F456),
-                    onPressed: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => SetupScreen()));
+                    disabledColor: Color(0xFFF0F456).withOpacity(0.5),
+                    onPressed: _loggingIn == true ? null : () {
+                      _login();
                     },
                     child: Text(
                       'Login',

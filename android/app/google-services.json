@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "362022678135",
+    "firebase_url": "https://onboard-9ca21.firebaseio.com",
+    "project_id": "onboard-9ca21",
+    "storage_bucket": "onboard-9ca21.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:362022678135:android:e1daf55ed87c63ad826072",
+        "android_client_info": {
+          "package_name": "com.hopprdev.onboardtouch"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "362022678135-v80bdbh5orroc1p55s7cg4e4h526vc1v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbMZKnAQ_gkeKoYEngZuHOId4Hp67aa7E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "362022678135-v80bdbh5orroc1p55s7cg4e4h526vc1v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

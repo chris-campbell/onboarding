@@ -1,14 +1,73 @@
 import 'package:flutter/material.dart';
-import '../widgets/control_text_field.dart';
+import 'package:flutter/services.dart';
 import '../widgets/round_social_button.dart';
 import 'login_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:onboardingtest/constants.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'setup_screen.dart';
 
-class SignupScreen extends StatelessWidget {
+class SignupScreen extends StatefulWidget {
+  static String id = 'signup_screen';
+  @override
+  _SignupScreenState createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends State<SignupScreen> {
+  TextEditingController _nameController = TextEditingController();
+  TextEditingController _emailController = TextEditingController();
+  TextEditingController _passwordController = TextEditingController();
+  TextEditingController _passwordConfirmController = TextEditingController();
+
+  GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  bool _loggingIn = false;
+
+  _signUp() async {
+
+    setState(() {
+      _loggingIn = true;
+    });
+
+    _scaffoldKey.currentState.removeCurrentSnackBar();
+    _scaffoldKey.currentState.showSnackBar(SnackBar(
+      content: Text('Logging in...'),
+    ));
+
+    try {
+      FirebaseUser user = (await _firebaseAuth.createUserWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim()))
+          .user;
+
+      UserUpdateInfo userInfo = UserUpdateInfo();
+      userInfo.displayName = _nameController.text.trim();
+      await user.updateProfile(userInfo);
+
+      _scaffoldKey.currentState.removeCurrentSnackBar();
+      _scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text('Your account has been successfully created.'),
+      ));
+      Navigator.pushNamed(context, SetupScreen.id);
+
+    } catch (e) {
+      _scaffoldKey.currentState.removeCurrentSnackBar();
+      _scaffoldKey.currentState.showSnackBar(SnackBar(
+        content: Text((e as PlatformException).message),
+      ));
+    } finally {
+      setState(() {
+        _loggingIn = false;
+      });
+    }
+  }
+
+  FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: Color(0xFF333333),
       body: Padding(
         padding: const EdgeInsets.all(40.0),
@@ -29,24 +88,41 @@ class SignupScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                ControlTextField(
-                  hintText: 'John Doe',
-                  icon: Icon(
-                    Icons.face,
-                    color: Color(0xFFF0F456),
-                    size: 30.0,
-                  ),
-                ),
-                SizedBox(
-                  height: 20.0,
-                ),
-                ControlTextField(
-                  hintText: 'example@domain.com',
-                  textType: TextInputType.emailAddress,
-                  icon: Icon(
-                    Icons.email,
-                    color: Color(0xFFF0F456),
-                    size: 30.0,
+                Container(
+                  child: Material(
+                    color: Color(0xFF333333),
+                    child: TextField(
+                      controller: _nameController,
+                      keyboardType: TextInputType.text,
+                      style: TextStyle(
+                        color: Color(0xFFEBEBEB),
+                        fontSize: 20.0,
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        focusedBorder: kFocusBorderStyle,
+                        enabledBorder: kEnabledBorderStyle,
+                        filled: true,
+                        fillColor: Color(0xFF333333),
+                        hintText: 'John Doe',
+                        hintStyle: TextStyle(
+                          fontSize: 21.0,
+                          color: Color(0xFF999999),
+                        ),
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 11.0),
+                          child: Icon(
+                            Icons.face,
+                            color: Color(0xFFF0F456),
+                            size: 30.0,
+                          ),
+                        ),
+                      ),
+                      onChanged: (value) {
+                      },
+                    ),
                   ),
                 ),
                 SizedBox(
@@ -55,7 +131,49 @@ class SignupScreen extends StatelessWidget {
                 Container(
                   child: Material(
                     color: Color(0xFF333333),
-                    child: TextFormField(
+                    child: TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      style: TextStyle(
+                        color: Color(0xFFEBEBEB),
+                        fontSize: 20.0,
+                      ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        focusedBorder: kFocusBorderStyle,
+                        enabledBorder: kEnabledBorderStyle,
+                        filled: true,
+                        fillColor: Color(0xFF333333),
+                        hintText: 'example@domain.com',
+                        hintStyle: TextStyle(
+                          fontSize: 21.0,
+                          color: Color(0xFF999999),
+                        ),
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 11.0),
+                          child: Icon(
+                            Icons.email,
+                            color: Color(0xFFF0F456),
+                            size: 30.0,
+                          ),
+                        ),
+                      ),
+                      onChanged: (value) {
+
+                      },
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: 20.0,
+                ),
+                Container(
+                  child: Material(
+                    color: Color(0xFF333333),
+                    child: TextField(
+                      controller: _passwordController,
                       obscureText: true,
                       style: TextStyle(
                         color: Color(0xFFEBEBEB),
@@ -83,8 +201,8 @@ class SignupScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      validator: (value) {
-                        return value;
+                      onChanged: (value) {
+
                       },
                     ),
                   ),
@@ -100,7 +218,10 @@ class SignupScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10.0),
                     ),
                     color: Color(0xFF048D9B),
-                    onPressed: () {},
+                    disabledColor: Color(0xFF048D9B).withOpacity(0.5),
+                    onPressed: _loggingIn == true ? null : () async {
+                      _signUp();
+                    },
                     child: Text(
                       'Sign up',
                       style: TextStyle(
@@ -174,8 +295,7 @@ class SignupScreen extends StatelessWidget {
                     ),
                     color: Color(0xFFF0F456),
                     onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => Login()));
+                      Navigator.pushNamed(context, LoginScreen.id);
                     },
                     child: Text(
                       'Login',
