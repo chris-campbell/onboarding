@@ -33,6 +33,7 @@ dependencies:
   firebase_auth: ^0.16.0
   cloud_firestore: ^0.13.5
   auto_orientation: ^1.0.6
+  intl: ^0.16.1
   sensors: ^0.4.2+2
 
 

@@ -10,7 +10,7 @@ import '../components/hour_select_button.dart';
 import '../components/round_days_button.dart';
 import '../components/on_back_press.dart';
 import 'package:sensors/sensors.dart';
-
+import 'package:intl/intl_browser.dart';
 import 'dart:async';
 
 class SetupScreen extends StatefulWidget {
@@ -28,6 +28,8 @@ class _SetupScreenState extends State<SetupScreen> {
   bool switchOnOrOff = false;
   List<StreamSubscription<dynamic>> _streamSubscription =
       <StreamSubscription<dynamic>>[];
+
+  StreamSubscription<AccelerometerEvent> streamSubscription;
 
   String _displayName = '';
 
@@ -84,6 +86,18 @@ class _SetupScreenState extends State<SetupScreen> {
     return releaseTime;
   }
 
+  movementListener() {
+    streamSubscription = accelerometerEvents.listen((AccelerometerEvent event) {
+
+      print('X: ${event.x}');
+      print('Y: ${event.y}');
+      print('Z: ${event.z}');
+    });
+
+  }
+
+
+
   @override
   void initState() {
     // TODO: implement initState
@@ -119,27 +133,17 @@ class _SetupScreenState extends State<SetupScreen> {
   Widget build(BuildContext context) {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-    Duration time = Duration(seconds: 3);
+    Duration time = Duration(seconds: 10);
 
     // if component toggled on, delay for given duration
     // then switch toggle to off
     if (switchOnOrOff == true) {
-      _streamSubscription
-          .add(accelerometerEvents.listen((AccelerometerEvent event) {
-        setState(() {x = event.x; y = event.y; z = event.z; });
-        print(
-            '${x.toStringAsFixed(1)} ${y.toStringAsFixed(1)} ${z.toStringAsFixed(1)}');
-      }));
-
-      print('Listening.....');
+      movementListener();
       Future.delayed(time, () {
         setState(() {
           switchOnOrOff = false;
         });
-        for (StreamSubscription<dynamic> subscription in _streamSubscription) {
-            subscription.cancel();
-            print(subscription);
-        }
+        streamSubscription.cancel();
       });
     }
 
@@ -164,22 +168,7 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     GestureDetector(
                       onTap: () async {
-                        Duration time = Duration(seconds: 10);
-
-                        if (switchOnOrOff == true) {
-                          print('Listening');
-                        } else {
-                          await Future.delayed(time, () {
-                            setState(() {
-                              switchOnOrOff = true;
-                            });
-
-                            print(switchOnOrOff);
-                          });
-                        }
-
-                        print(switchOnOrOff);
-
+                        var format = DateFormat.yMd('ar');
 //                        Navigator.pushNamed(context, LoginScreen.id);
 //                      var _timer = Timer(Duration(seconds: 5), () {
 //                        print('hello');
