@@ -9,6 +9,9 @@ import '../components/time_select.dart';
 import '../components/hour_select_button.dart';
 import '../components/round_days_button.dart';
 import '../components/on_back_press.dart';
+import 'package:sensors/sensors.dart';
+
+import 'dart:async';
 
 class SetupScreen extends StatefulWidget {
   static String id = 'setup_screen';
@@ -19,9 +22,12 @@ class SetupScreen extends StatefulWidget {
 
 class _SetupScreenState extends State<SetupScreen> {
   FirebaseService _firebaseService = FirebaseService();
-
+  double x, y, z;
   bool _mon, _tues, _weds, _thurs, _fri, _sat, _sun = false;
   bool _threeHrs, _sixHrs, _twelveHrs, _twentyFourHrs = false;
+  bool switchOnOrOff = false;
+  List<StreamSubscription<dynamic>> _streamSubscription =
+      <StreamSubscription<dynamic>>[];
 
   String _displayName = '';
 
@@ -69,7 +75,13 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 
   Color dayButtonTextColor(day) {
-    return day == false ? kPrimaryTextGrey : kPrimaryBlackGrey;
+    return day == false ? kPrimaryYellow : kPrimaryBlackGrey;
+  }
+
+  test() {
+//    TimeOfDay now = TimeOfDay.now();
+    TimeOfDay releaseTime = TimeOfDay(hour: 15, minute: 0);
+    return releaseTime;
   }
 
   @override
@@ -107,6 +119,30 @@ class _SetupScreenState extends State<SetupScreen> {
   Widget build(BuildContext context) {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
+    Duration time = Duration(seconds: 3);
+
+    // if component toggled on, delay for given duration
+    // then switch toggle to off
+    if (switchOnOrOff == true) {
+      _streamSubscription
+          .add(accelerometerEvents.listen((AccelerometerEvent event) {
+        setState(() {x = event.x; y = event.y; z = event.z; });
+        print(
+            '${x.toStringAsFixed(1)} ${y.toStringAsFixed(1)} ${z.toStringAsFixed(1)}');
+      }));
+
+      print('Listening.....');
+      Future.delayed(time, () {
+        setState(() {
+          switchOnOrOff = false;
+        });
+        for (StreamSubscription<dynamic> subscription in _streamSubscription) {
+            subscription.cancel();
+            print(subscription);
+        }
+      });
+    }
+
     return WillPopScope(
       onWillPop: _onBackPressed,
       child: Scaffold(
@@ -127,8 +163,29 @@ class _SetupScreenState extends State<SetupScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, LoginScreen.id);
+                      onTap: () async {
+                        Duration time = Duration(seconds: 10);
+
+                        if (switchOnOrOff == true) {
+                          print('Listening');
+                        } else {
+                          await Future.delayed(time, () {
+                            setState(() {
+                              switchOnOrOff = true;
+                            });
+
+                            print(switchOnOrOff);
+                          });
+                        }
+
+                        print(switchOnOrOff);
+
+//                        Navigator.pushNamed(context, LoginScreen.id);
+//                      var _timer = Timer(Duration(seconds: 5), () {
+//                        print('hello');
+//                      });
+//                        var delay = await Future.delayed(Duration(seconds: 10,));
+//                        TimeOfDay releaseTime = TimeOfDay(hour: 0, minute: 1 + delay);
                       },
                       child: Container(
                         alignment: Alignment.centerRight,
@@ -233,7 +290,9 @@ class _SetupScreenState extends State<SetupScreen> {
                                   textColor: dayButtonTextColor(_tues),
                                   active: () {
                                     setState(() {
-                                      _tues == false ? _tues = true : _tues = false;
+                                      _tues == false
+                                          ? _tues = true
+                                          : _tues = false;
                                     });
                                   },
                                 ),
@@ -273,7 +332,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                 RoundDaysButton(
                                   day: 'F',
                                   bodyColor: dayButtonActive(_fri),
-                                  textColor:dayButtonTextColor(_fri),
+                                  textColor: dayButtonTextColor(_fri),
                                   active: () {
                                     setState(() {
                                       _fri == false
@@ -311,7 +370,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                   textColor: dayButtonTextColor(_sun),
                                   active: () {
                                     setState(() {
-                                     return _sun == false
+                                      return _sun == false
                                           ? _sun = true
                                           : _sun = false;
                                     });
@@ -347,9 +406,7 @@ class _SetupScreenState extends State<SetupScreen> {
                         children: <Widget>[
                           HourSelectButton(
                             hour: '3hr',
-                            textColor: _threeHrs == false
-                                ? kPrimaryBlackGrey
-                                : kPrimaryBlackGrey,
+                            textColor: kPrimaryBlackGrey,
                             bodyColor: _threeHrs == false
                                 ? kPrimaryBlue
                                 : kPrimaryWhite,
@@ -366,8 +423,7 @@ class _SetupScreenState extends State<SetupScreen> {
                           ),
                           HourSelectButton(
                             hour: '6hr',
-                            textColor:
-                                _sixHrs == false ? kPrimaryBlackGrey : kPrimaryBlackGrey,
+                            textColor: kPrimaryBlackGrey,
                             bodyColor:
                                 _sixHrs == false ? kPrimaryBlue : kPrimaryWhite,
                             active: () {
@@ -383,9 +439,7 @@ class _SetupScreenState extends State<SetupScreen> {
                           ),
                           HourSelectButton(
                             hour: '12hr',
-                            textColor: _twelveHrs == false
-                                ? kPrimaryBlackGrey
-                                : kPrimaryBlackGrey,
+                            textColor: kPrimaryBlackGrey,
                             bodyColor: _twelveHrs == false
                                 ? kPrimaryBlue
                                 : kPrimaryWhite,
@@ -403,9 +457,7 @@ class _SetupScreenState extends State<SetupScreen> {
                           ),
                           HourSelectButton(
                             hour: '24hr',
-                            textColor: _twentyFourHrs == false
-                                ? kPrimaryBlackGrey
-                                : kPrimaryBlackGrey,
+                            textColor: kPrimaryBlackGrey,
                             bodyColor: _twentyFourHrs == false
                                 ? kPrimaryBlue
                                 : kPrimaryWhite,
@@ -479,11 +531,19 @@ class _SetupScreenState extends State<SetupScreen> {
                         fontSize: 17.0,
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() {
+                        switchOnOrOff == false
+                            ? switchOnOrOff = true
+                            : switchOnOrOff = false;
+                      });
+
+                      print(switchOnOrOff);
+                    },
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(top: 11.0),
+                  padding: const EdgeInsets.only(top: 30.0),
                   child: GestureDetector(
                     onTap: () {
                       print('Reset Button');
