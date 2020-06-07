@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -8,10 +9,12 @@ import '../components/firebase_services.dart';
 import '../components/time_select.dart';
 import '../components/hour_select_button.dart';
 import '../components/round_days_button.dart';
-import '../components/on_back_press.dart';
 import 'package:sensors/sensors.dart';
-import 'package:intl/intl_browser.dart';
+import 'package:android_alarm_manager/android_alarm_manager.dart';
+import 'package:onboardingtest/components/weekdays.dart';
+import 'package:onboardingtest/components/durationHours.dart';
 import 'dart:async';
+import 'dart:io';
 
 class SetupScreen extends StatefulWidget {
   static String id = 'setup_screen';
@@ -21,17 +24,39 @@ class SetupScreen extends StatefulWidget {
 }
 
 class _SetupScreenState extends State<SetupScreen> {
-  FirebaseService _firebaseService = FirebaseService();
   double x, y, z;
-  bool _mon, _tues, _weds, _thurs, _fri, _sat, _sun = false;
-  bool _threeHrs, _sixHrs, _twelveHrs, _twentyFourHrs = false;
+  int runDuration = 3;
   bool switchOnOrOff = false;
+  String _displayName = '';
+
+  FirebaseService _firebaseService = FirebaseService();
+  final _firestore = Firestore.instance;
+
+  StreamSubscription<AccelerometerEvent> streamSubscription;
   List<StreamSubscription<dynamic>> _streamSubscription =
       <StreamSubscription<dynamic>>[];
 
-  StreamSubscription<AccelerometerEvent> streamSubscription;
+  List<int> selectedWeekdays = [];
 
-  String _displayName = '';
+  static void test() {
+    DateTime time = DateTime.now();
+    print('$time #*#*#*#*#*#*#*#*#');
+  }
+
+  testTime() {
+    TimeOfDay t = startTime;
+    final now = DateTime.now();
+    DateTime mainTime =
+        DateTime(now.year, now.month, now.day, t.hour, t.minute);
+    print(mainTime);
+    return mainTime;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getDisplayName();
+  }
 
   // Scaffold global key
   GlobalKey<ScaffoldState> _scaffoldKeySetup = GlobalKey<ScaffoldState>();
@@ -39,28 +64,41 @@ class _SetupScreenState extends State<SetupScreen> {
   // Retrieve user display name from Firebase
   Future getDisplayName() async {
     String displayName = await _firebaseService.getDisplayName();
+    print(displayName);
     setState(() => _displayName = displayName);
   }
 
   // Logout user from Firebase
-  Future _logoutUser() async {
+  Future logoutUserFromFirebase() async {
     try {
-      await _firebaseService.signout();
-      _scaffoldKeySetup.currentState.showSnackBar(SnackBar(
-        content: Text('You have successfully signed out'),
-      ));
-
-      await Future.delayed(Duration(milliseconds: 500));
-
+      _firebaseService.logoutUser();
+      _firebaseService.logoutNotification(_scaffoldKeySetup);
+      await Future.delayed(Duration(milliseconds: 600));
       Navigator.pushNamed(context, LoginScreen.id);
     } catch (e) {
       print(e);
     }
   }
 
-  // Displays users name
-  displayUsername() {
-    _displayName != null
+//  logMovement() {
+//    if
+//    }
+
+  // Add selected day to days list onPress
+  void selectedWeekday(dayActive, dayNumber) {
+    print(dayActive);
+    if (dayActive == true && !selectedWeekdays.contains(dayNumber)) {
+      selectedWeekdays.add(dayNumber);
+      print(selectedWeekdays);
+    } else if (dayActive == false && selectedWeekdays.contains(dayNumber)) {
+      selectedWeekdays.remove(dayNumber);
+      print(selectedWeekdays);
+    }
+  }
+
+  // Display username
+  Text displayUsername() {
+    return _displayName != null
         ? Text(
             'Logged in, $_displayName',
             textAlign: TextAlign.end,
@@ -72,37 +110,81 @@ class _SetupScreenState extends State<SetupScreen> {
         : Text('no name');
   }
 
+  // Toggle between active and inactive day button color
   Color dayButtonActive(day) {
     return day == false ? kPrimaryWhiteOpacity : kPrimaryYellow;
   }
 
+  // Toggle between active and inactive day button color text
   Color dayButtonTextColor(day) {
     return day == false ? kPrimaryYellow : kPrimaryBlackGrey;
   }
 
-  test() {
-//    TimeOfDay now = TimeOfDay.now();
-    TimeOfDay releaseTime = TimeOfDay(hour: 15, minute: 0);
-    return releaseTime;
-  }
-
+  // Listen for device movement
   movementListener() {
-    streamSubscription = accelerometerEvents.listen((AccelerometerEvent event) {
 
-      print('X: ${event.x}');
-      print('Y: ${event.y}');
-      print('Z: ${event.z}');
+    userAccelerometerEvents.listen((UserAccelerometerEvent event) {
+//      print('X: ${event.x}');
+//      print('Y: ${event.y}');
+//      print('Z: ${event.z}');
+
+
+
+          x = event.x;
+          y = event.y;
+          z = event.z;
+      var squareRoot = (x * x + y  * y);
+
+      if (squareRoot >= 1.0 && squareRoot <= 10.0 ) {
+
+        try {
+          print('$squareRoot');
+          _firestore.collection('logs').add({
+            "time": DateTime.now()
+          }).then((value) {
+            setState(() {
+              switchOnOrOff = false;
+            });
+          });
+
+        }
+
+        catch(e) {
+          print(e);
+        }
+
+
+      }
+
+//          streamSubscription.cancel();
     });
+//
+//      if (x >= 10.0 || y >= 10.0 || x >= 10.0) {
+//        print('$x $y $z');
+//        try {
+//          _firestore.collection('logs').add({
+//            "time": DateTime.now()
+//          });
+//        }
+//
+//        catch(e) {
+//          print(e);
+//        }
+//      }
+
+
+
+
+
+
 
   }
 
+  void logMovement() {
+    if (x > 10.0|| y > 10.0 || z > 10.0) {
 
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    getDisplayName();
-    super.initState();
+    }
   }
 
   // Prevent user from going back to login screen
@@ -121,7 +203,7 @@ class _SetupScreenState extends State<SetupScreen> {
           FlatButton(
             child: Text('Yes'),
             onPressed: () {
-              _logoutUser();
+              logoutUserFromFirebase();
             },
           ),
         ],
@@ -133,7 +215,7 @@ class _SetupScreenState extends State<SetupScreen> {
   Widget build(BuildContext context) {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-    Duration time = Duration(seconds: 10);
+    Duration time = Duration(hours: runDuration);
 
     // if component toggled on, delay for given duration
     // then switch toggle to off
@@ -168,13 +250,13 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     GestureDetector(
                       onTap: () async {
-                        var format = DateFormat.yMd('ar');
-//                        Navigator.pushNamed(context, LoginScreen.id);
-//                      var _timer = Timer(Duration(seconds: 5), () {
-//                        print('hello');
-//                      });
-//                        var delay = await Future.delayed(Duration(seconds: 10,));
-//                        TimeOfDay releaseTime = TimeOfDay(hour: 0, minute: 1 + delay);
+//                        print(testTime());
+//                        print('fired!');
+//                        await AndroidAlarmManager.oneShotAt(testTime(), 0, test,
+//                            wakeup: true);
+                      _firestore.collection("logs").add({
+                        'time': DateTime.now()
+                      });
                       },
                       child: Container(
                         alignment: Alignment.centerRight,
@@ -260,13 +342,12 @@ class _SetupScreenState extends State<SetupScreen> {
                               children: <Widget>[
                                 RoundDaysButton(
                                   day: 'M',
-                                  bodyColor: dayButtonActive(_mon),
-                                  textColor: dayButtonTextColor(_mon),
+                                  bodyColor: dayButtonActive(mon),
+                                  textColor: dayButtonTextColor(mon),
                                   active: () {
                                     setState(() {
-                                      _mon == false
-                                          ? _mon = true
-                                          : _mon = false;
+                                      mon == false ? mon = true : mon = false;
+                                      selectedWeekday(mon, 1);
                                     });
                                   },
                                 ),
@@ -275,13 +356,15 @@ class _SetupScreenState extends State<SetupScreen> {
                                 ),
                                 RoundDaysButton(
                                   day: 'Tu',
-                                  bodyColor: dayButtonActive(_tues),
-                                  textColor: dayButtonTextColor(_tues),
+                                  bodyColor: dayButtonActive(tues),
+                                  textColor: dayButtonTextColor(tues),
                                   active: () {
                                     setState(() {
-                                      _tues == false
-                                          ? _tues = true
-                                          : _tues = false;
+                                      tues == false
+                                          ? tues = true
+                                          : tues = false;
+
+                                      selectedWeekday(tues, 2);
                                     });
                                   },
                                 ),
@@ -290,14 +373,16 @@ class _SetupScreenState extends State<SetupScreen> {
                                 ),
                                 RoundDaysButton(
                                   day: 'W',
-                                  bodyColor: dayButtonActive(_weds),
-                                  textColor: dayButtonTextColor(_weds),
+                                  bodyColor: dayButtonActive(weds),
+                                  textColor: dayButtonTextColor(weds),
                                   active: () {
                                     setState(() {
-                                      _weds == false
-                                          ? _weds = true
-                                          : _weds = false;
+                                      weds == false
+                                          ? weds = true
+                                          : weds = false;
+                                      selectedWeekday(weds, 3);
                                     });
+                                    print(selectedWeekdays);
                                   },
                                 ),
                                 SizedBox(
@@ -305,14 +390,16 @@ class _SetupScreenState extends State<SetupScreen> {
                                 ),
                                 RoundDaysButton(
                                   day: 'Th',
-                                  bodyColor: dayButtonActive(_thurs),
-                                  textColor: dayButtonTextColor(_thurs),
+                                  bodyColor: dayButtonActive(thurs),
+                                  textColor: dayButtonTextColor(thurs),
                                   active: () {
                                     setState(() {
-                                      _thurs == false
-                                          ? _thurs = true
-                                          : _thurs = false;
+                                      thurs == false
+                                          ? thurs = true
+                                          : thurs = false;
+                                      selectedWeekday(thurs, 4);
                                     });
+                                    print(selectedWeekdays);
                                   },
                                 ),
                                 SizedBox(
@@ -320,14 +407,14 @@ class _SetupScreenState extends State<SetupScreen> {
                                 ),
                                 RoundDaysButton(
                                   day: 'F',
-                                  bodyColor: dayButtonActive(_fri),
-                                  textColor: dayButtonTextColor(_fri),
+                                  bodyColor: dayButtonActive(fri),
+                                  textColor: dayButtonTextColor(fri),
                                   active: () {
                                     setState(() {
-                                      _fri == false
-                                          ? _fri = true
-                                          : _fri = false;
+                                      fri == false ? fri = true : fri = false;
+                                      selectedWeekday(fri, 5);
                                     });
+                                    print(selectedWeekdays);
                                   },
                                 ),
                                 SizedBox(
@@ -340,14 +427,15 @@ class _SetupScreenState extends State<SetupScreen> {
                               children: <Widget>[
                                 RoundDaysButton(
                                   day: 'Sa',
-                                  bodyColor: dayButtonActive(_sat),
-                                  textColor: dayButtonTextColor(_sat),
+                                  bodyColor: dayButtonActive(sat),
+                                  textColor: dayButtonTextColor(sat),
                                   active: () {
                                     setState(() {
-                                      _sat == false
-                                          ? _sat = true
-                                          : _sat = false;
+                                      print('$sat');
+                                      sat == false ? sat = true : sat = false;
+                                      selectedWeekday(sat, 6);
                                     });
+                                    print(selectedWeekdays);
                                   },
                                 ),
                                 SizedBox(
@@ -355,14 +443,15 @@ class _SetupScreenState extends State<SetupScreen> {
                                 ),
                                 RoundDaysButton(
                                   day: 'Su',
-                                  bodyColor: dayButtonActive(_sun),
-                                  textColor: dayButtonTextColor(_sun),
+                                  bodyColor: dayButtonActive(sun),
+                                  textColor: dayButtonTextColor(sun),
                                   active: () {
                                     setState(() {
-                                      return _sun == false
-                                          ? _sun = true
-                                          : _sun = false;
+                                      print('$sun');
+                                      sun == false ? sun = true : sun = false;
+                                      selectedWeekday(sun, 7);
                                     });
+                                    print(selectedWeekdays);
                                   },
                                 ),
                                 SizedBox(
@@ -396,14 +485,19 @@ class _SetupScreenState extends State<SetupScreen> {
                           HourSelectButton(
                             hour: '3hr',
                             textColor: kPrimaryBlackGrey,
-                            bodyColor: _threeHrs == false
+                            bodyColor: threeHrs == false
                                 ? kPrimaryBlue
                                 : kPrimaryWhite,
                             active: () {
                               setState(() {
-                                _threeHrs == false
-                                    ? _threeHrs = true
-                                    : _threeHrs = false;
+                                threeHrs == false
+                                    ? threeHrs = true
+                                    : threeHrs = false;
+                                if (threeHrs == true) {
+                                  setState(() {
+                                    runDuration = 3;
+                                  });
+                                }
                               });
                             },
                           ),
@@ -414,12 +508,12 @@ class _SetupScreenState extends State<SetupScreen> {
                             hour: '6hr',
                             textColor: kPrimaryBlackGrey,
                             bodyColor:
-                                _sixHrs == false ? kPrimaryBlue : kPrimaryWhite,
+                                sixHrs == false ? kPrimaryBlue : kPrimaryWhite,
                             active: () {
                               setState(() {
-                                _sixHrs == false
-                                    ? _sixHrs = true
-                                    : _sixHrs = false;
+                                sixHrs == false
+                                    ? sixHrs = true
+                                    : sixHrs = false;
                               });
                             },
                           ),
@@ -429,16 +523,16 @@ class _SetupScreenState extends State<SetupScreen> {
                           HourSelectButton(
                             hour: '12hr',
                             textColor: kPrimaryBlackGrey,
-                            bodyColor: _twelveHrs == false
+                            bodyColor: twelveHrs == false
                                 ? kPrimaryBlue
                                 : kPrimaryWhite,
                             active: () {
                               setState(() {
-                                _twelveHrs == false
-                                    ? _twelveHrs = true
-                                    : _twelveHrs = false;
+                                twelveHrs == false
+                                    ? twelveHrs = true
+                                    : twelveHrs = false;
                               });
-                              print(_twelveHrs);
+                              print(twelveHrs);
                             },
                           ),
                           SizedBox(
@@ -447,15 +541,15 @@ class _SetupScreenState extends State<SetupScreen> {
                           HourSelectButton(
                             hour: '24hr',
                             textColor: kPrimaryBlackGrey,
-                            bodyColor: _twentyFourHrs == false
+                            bodyColor: twentyFourHrs == false
                                 ? kPrimaryBlue
                                 : kPrimaryWhite,
                             active: () {
                               setState(() {
-                                _twentyFourHrs == false
-                                    ? _twentyFourHrs = true
-                                    : _twentyFourHrs = false;
-                                print(_twentyFourHrs);
+                                twentyFourHrs == false
+                                    ? twentyFourHrs = true
+                                    : twentyFourHrs = false;
+                                print(twentyFourHrs);
                               });
                             },
                           ),
@@ -536,6 +630,7 @@ class _SetupScreenState extends State<SetupScreen> {
                   child: GestureDetector(
                     onTap: () {
                       print('Reset Button');
+                      selectedWeekdays.clear();
                     },
                     child: Text(
                       'Reset',

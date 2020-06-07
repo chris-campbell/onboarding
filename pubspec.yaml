@@ -35,6 +35,9 @@ dependencies:
   auto_orientation: ^1.0.6
   intl: ^0.16.1
   sensors: ^0.4.2+2
+  android_alarm_manager: ^0.4.5+11
+  http: ^0.12.1
+  android_intent: ^0.3.7+2
 
 
 dev_dependencies:
