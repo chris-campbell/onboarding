@@ -24,42 +24,41 @@ class SetupScreen extends StatefulWidget {
 }
 
 class _SetupScreenState extends State<SetupScreen> {
-  double x, y, z;
-  int runDuration = 3;
-  bool switchOnOrOff = false;
-  String _displayName = '';
-
+  // Initialize Firebase Service
   FirebaseService _firebaseService = FirebaseService();
+
+  // Initialize Firestore instance
   final _firestore = Firestore.instance;
 
-  StreamSubscription<AccelerometerEvent> streamSubscription;
-  List<StreamSubscription<dynamic>> _streamSubscription =
-      <StreamSubscription<dynamic>>[];
-
-  List<int> selectedWeekdays = [];
-
-  static void test() {
-    DateTime time = DateTime.now();
-    print('$time #*#*#*#*#*#*#*#*#');
-  }
-
-  testTime() {
-    TimeOfDay t = startTime;
-    final now = DateTime.now();
-    DateTime mainTime =
-        DateTime(now.year, now.month, now.day, t.hour, t.minute);
-    print(mainTime);
-    return mainTime;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getDisplayName();
-  }
+  // Movement listener stream
+  StreamSubscription<AccelerometerEvent> _streamSubscription;
 
   // Scaffold global key
   GlobalKey<ScaffoldState> _scaffoldKeySetup = GlobalKey<ScaffoldState>();
+
+  int _runDuration = 3;
+  double _x, _y, _z;
+  double _movementData = 0.0;
+  bool _flagMovement = false;
+  bool _switchOnOrOff = false;
+  String _displayName = '';
+  List<int> _selectedWeekdays = [];
+
+
+  
+  // Display username
+  Text displayUsername() {
+    return _displayName != null
+        ? Text(
+      'Logged in, $_displayName',
+      textAlign: TextAlign.end,
+      style: TextStyle(
+        color: kPrimaryLightGrey,
+        fontSize: 15.0,
+      ),
+    )
+        : Text('no name');
+  }
 
   // Retrieve user display name from Firebase
   Future getDisplayName() async {
@@ -80,34 +79,16 @@ class _SetupScreenState extends State<SetupScreen> {
     }
   }
 
-//  logMovement() {
-//    if
-//    }
-
   // Add selected day to days list onPress
   void selectedWeekday(dayActive, dayNumber) {
     print(dayActive);
-    if (dayActive == true && !selectedWeekdays.contains(dayNumber)) {
-      selectedWeekdays.add(dayNumber);
-      print(selectedWeekdays);
-    } else if (dayActive == false && selectedWeekdays.contains(dayNumber)) {
-      selectedWeekdays.remove(dayNumber);
-      print(selectedWeekdays);
+    if (dayActive == true && !_selectedWeekdays.contains(dayNumber)) {
+      _selectedWeekdays.add(dayNumber);
+      print(_selectedWeekdays);
+    } else if (dayActive == false && _selectedWeekdays.contains(dayNumber)) {
+      _selectedWeekdays.remove(dayNumber);
+      print(_selectedWeekdays);
     }
-  }
-
-  // Display username
-  Text displayUsername() {
-    return _displayName != null
-        ? Text(
-            'Logged in, $_displayName',
-            textAlign: TextAlign.end,
-            style: TextStyle(
-              color: kPrimaryLightGrey,
-              fontSize: 15.0,
-            ),
-          )
-        : Text('no name');
   }
 
   // Toggle between active and inactive day button color
@@ -120,26 +101,23 @@ class _SetupScreenState extends State<SetupScreen> {
     return day == false ? kPrimaryYellow : kPrimaryBlackGrey;
   }
 
-  bool flagMovement = false;
-  double squareRoot = 0.0;
   // Listen for device movement
   void movementListener() {
     userAccelerometerEvents.listen((UserAccelerometerEvent event) {
-      x = event.x;
-      y = event.y;
-      z = event.z;
+      _x = event.x;
+      _y = event.y;
+      _z = event.z;
       setState(() {
-        squareRoot = (x * x + y * y);
+        _movementData = (_x * _x + _y * _y);
       });
     });
-    print(squareRoot);
-    if (squareRoot >= 2.0) {
+    if (_movementData >= 2.0) {
       setState(() {
-        flagMovement = true;
+        _flagMovement = true;
       });
     } else {
       setState(() {
-        flagMovement = false;
+        _flagMovement = false;
       });
     }
   }
@@ -168,13 +146,33 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
+  static void test() {
+    DateTime time = DateTime.now();
+    print('$time #*#*#*#*#*#*#*#*#');
+  }
+
+  testTime() {
+    TimeOfDay t = startTime;
+    final now = DateTime.now();
+    DateTime mainTime =
+    DateTime(now.year, now.month, now.day, t.hour, t.minute);
+    print(mainTime);
+    return mainTime;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getDisplayName();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Maintain port portrait
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
     // Duration of listening to movement
-    Duration time = Duration(hours: runDuration);
+    Duration time = Duration(hours: _runDuration);
 
     // Log detected movement
     movementLogger(time);
@@ -200,13 +198,10 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     GestureDetector(
                       onTap: () async {
-//                        print(testTime());
-//                        print('fired!');
-//                        await AndroidAlarmManager.oneShotAt(testTime(), 0, test,
-//                            wakeup: true);
-                        _firestore
-                            .collection("logs")
-                            .add({'time': DateTime.now()});
+                        print(testTime());
+                        print('fired!');
+                        await AndroidAlarmManager.oneShotAt(testTime(), 0, test,
+                            wakeup: true);
                       },
                       child: Container(
                         alignment: Alignment.centerRight,
@@ -332,7 +327,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                           : weds = false;
                                       selectedWeekday(weds, 3);
                                     });
-                                    print(selectedWeekdays);
+                                    print(_selectedWeekdays);
                                   },
                                 ),
                                 SizedBox(
@@ -349,7 +344,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                           : thurs = false;
                                       selectedWeekday(thurs, 4);
                                     });
-                                    print(selectedWeekdays);
+                                    print(_selectedWeekdays);
                                   },
                                 ),
                                 SizedBox(
@@ -364,7 +359,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                       fri == false ? fri = true : fri = false;
                                       selectedWeekday(fri, 5);
                                     });
-                                    print(selectedWeekdays);
+                                    print(_selectedWeekdays);
                                   },
                                 ),
                                 SizedBox(
@@ -385,7 +380,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                       sat == false ? sat = true : sat = false;
                                       selectedWeekday(sat, 6);
                                     });
-                                    print(selectedWeekdays);
+                                    print(_selectedWeekdays);
                                   },
                                 ),
                                 SizedBox(
@@ -401,7 +396,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                       sun == false ? sun = true : sun = false;
                                       selectedWeekday(sun, 7);
                                     });
-                                    print(selectedWeekdays);
+                                    print(_selectedWeekdays);
                                   },
                                 ),
                                 SizedBox(
@@ -445,7 +440,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                     : threeHrs = false;
                                 if (threeHrs == true) {
                                   setState(() {
-                                    runDuration = 3;
+                                    _runDuration = 3;
                                   });
                                 }
                               });
@@ -566,12 +561,10 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     onPressed: () {
                       setState(() {
-                        switchOnOrOff == false
-                            ? switchOnOrOff = true
-                            : switchOnOrOff = false;
+                        _switchOnOrOff == false
+                            ? _switchOnOrOff = true
+                            : _switchOnOrOff = false;
                       });
-
-                      print(switchOnOrOff);
                     },
                   ),
                 ),
@@ -580,7 +573,7 @@ class _SetupScreenState extends State<SetupScreen> {
                   child: GestureDetector(
                     onTap: () {
                       print('Reset Button');
-                      selectedWeekdays.clear();
+                      _selectedWeekdays.clear();
                     },
                     child: Text(
                       'Reset',
@@ -599,17 +592,17 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 
   void movementLogger(Duration time) {
-    if (switchOnOrOff == true) {
+    if (_switchOnOrOff == true) {
       movementListener();
-      if (flagMovement) {
+      if (_flagMovement) {
         _firestore.collection('logs').add({"time": DateTime.now()});
         sleep(Duration(seconds: 6));
       }
       Future.delayed(time, () {
         setState(() {
-          switchOnOrOff = false;
+          _switchOnOrOff = false;
         });
-        streamSubscription.cancel();
+        _streamSubscription.cancel();
       });
     }
   }
