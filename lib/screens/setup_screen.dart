@@ -120,70 +120,27 @@ class _SetupScreenState extends State<SetupScreen> {
     return day == false ? kPrimaryYellow : kPrimaryBlackGrey;
   }
 
+  bool flagMovement = false;
+  double squareRoot = 0.0;
   // Listen for device movement
-  movementListener() {
-
+  void movementListener() {
     userAccelerometerEvents.listen((UserAccelerometerEvent event) {
-//      print('X: ${event.x}');
-//      print('Y: ${event.y}');
-//      print('Z: ${event.z}');
-
-
-
-          x = event.x;
-          y = event.y;
-          z = event.z;
-      var squareRoot = (x * x + y  * y);
-
-      if (squareRoot >= 1.0 && squareRoot <= 10.0 ) {
-
-        try {
-          print('$squareRoot');
-          _firestore.collection('logs').add({
-            "time": DateTime.now()
-          }).then((value) {
-            setState(() {
-              switchOnOrOff = false;
-            });
-          });
-
-        }
-
-        catch(e) {
-          print(e);
-        }
-
-
-      }
-
-//          streamSubscription.cancel();
+      x = event.x;
+      y = event.y;
+      z = event.z;
+      setState(() {
+        squareRoot = (x * x + y * y);
+      });
     });
-//
-//      if (x >= 10.0 || y >= 10.0 || x >= 10.0) {
-//        print('$x $y $z');
-//        try {
-//          _firestore.collection('logs').add({
-//            "time": DateTime.now()
-//          });
-//        }
-//
-//        catch(e) {
-//          print(e);
-//        }
-//      }
-
-
-
-
-
-
-
-  }
-
-  void logMovement() {
-    if (x > 10.0|| y > 10.0 || z > 10.0) {
-
-
+    print(squareRoot);
+    if (squareRoot >= 2.0) {
+      setState(() {
+        flagMovement = true;
+      });
+    } else {
+      setState(() {
+        flagMovement = false;
+      });
     }
   }
 
@@ -213,21 +170,14 @@ class _SetupScreenState extends State<SetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Maintain port portrait
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
+    // Duration of listening to movement
     Duration time = Duration(hours: runDuration);
 
-    // if component toggled on, delay for given duration
-    // then switch toggle to off
-    if (switchOnOrOff == true) {
-      movementListener();
-      Future.delayed(time, () {
-        setState(() {
-          switchOnOrOff = false;
-        });
-        streamSubscription.cancel();
-      });
-    }
+    // Log detected movement
+    movementLogger(time);
 
     return WillPopScope(
       onWillPop: _onBackPressed,
@@ -254,9 +204,9 @@ class _SetupScreenState extends State<SetupScreen> {
 //                        print('fired!');
 //                        await AndroidAlarmManager.oneShotAt(testTime(), 0, test,
 //                            wakeup: true);
-                      _firestore.collection("logs").add({
-                        'time': DateTime.now()
-                      });
+                        _firestore
+                            .collection("logs")
+                            .add({'time': DateTime.now()});
                       },
                       child: Container(
                         alignment: Alignment.centerRight,
@@ -646,5 +596,21 @@ class _SetupScreenState extends State<SetupScreen> {
         ),
       ),
     );
+  }
+
+  void movementLogger(Duration time) {
+    if (switchOnOrOff == true) {
+      movementListener();
+      if (flagMovement) {
+        _firestore.collection('logs').add({"time": DateTime.now()});
+        sleep(Duration(seconds: 6));
+      }
+      Future.delayed(time, () {
+        setState(() {
+          switchOnOrOff = false;
+        });
+        streamSubscription.cancel();
+      });
+    }
   }
 }
