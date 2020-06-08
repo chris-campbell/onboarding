@@ -42,21 +42,18 @@ class _SetupScreenState extends State<SetupScreen> {
   bool _flagMovement = false;
   bool _switchOnOrOff = false;
   String _displayName = '';
-  List<int> _selectedWeekdays = [];
 
-
-  
   // Display username
   Text displayUsername() {
     return _displayName != null
         ? Text(
-      'Logged in, $_displayName',
-      textAlign: TextAlign.end,
-      style: TextStyle(
-        color: kPrimaryLightGrey,
-        fontSize: 15.0,
-      ),
-    )
+            'Logged in, $_displayName',
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              color: kPrimaryLightGrey,
+              fontSize: 15.0,
+            ),
+          )
         : Text('no name');
   }
 
@@ -79,28 +76,6 @@ class _SetupScreenState extends State<SetupScreen> {
     }
   }
 
-  // Add selected day to days list onPress
-  void selectedWeekday(dayActive, dayNumber) {
-    print(dayActive);
-    if (dayActive == true && !_selectedWeekdays.contains(dayNumber)) {
-      _selectedWeekdays.add(dayNumber);
-      print(_selectedWeekdays);
-    } else if (dayActive == false && _selectedWeekdays.contains(dayNumber)) {
-      _selectedWeekdays.remove(dayNumber);
-      print(_selectedWeekdays);
-    }
-  }
-
-  // Toggle between active and inactive day button color
-  Color dayButtonActive(day) {
-    return day == false ? kPrimaryWhiteOpacity : kPrimaryYellow;
-  }
-
-  // Toggle between active and inactive day button color text
-  Color dayButtonTextColor(day) {
-    return day == false ? kPrimaryYellow : kPrimaryBlackGrey;
-  }
-
   // Listen for device movement
   void movementListener() {
     userAccelerometerEvents.listen((UserAccelerometerEvent event) {
@@ -108,7 +83,7 @@ class _SetupScreenState extends State<SetupScreen> {
       _y = event.y;
       _z = event.z;
       setState(() {
-        _movementData = (_x * _x + _y * _y);
+        _movementData = (_x * _x + _y * _y + _z * _z);
       });
     });
     if (_movementData >= 2.0) {
@@ -151,12 +126,11 @@ class _SetupScreenState extends State<SetupScreen> {
     print('$time #*#*#*#*#*#*#*#*#');
   }
 
-  testTime() {
+  // Format TimeOfDay with DateTime for alarm manager
+  DateTime userGivenStartTime() {
     TimeOfDay t = startTime;
-    final now = DateTime.now();
-    DateTime mainTime =
-    DateTime(now.year, now.month, now.day, t.hour, t.minute);
-    print(mainTime);
+    final n = DateTime.now();
+    DateTime mainTime = DateTime(n.year, n.month, n.day, t.hour, t.minute);
     return mainTime;
   }
 
@@ -198,9 +172,10 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     GestureDetector(
                       onTap: () async {
-                        print(testTime());
+                        print(userGivenStartTime());
                         print('fired!');
-                        await AndroidAlarmManager.oneShotAt(testTime(), 0, test,
+                        await AndroidAlarmManager.oneShotAt(
+                            userGivenStartTime(), 0, test,
                             wakeup: true);
                       },
                       child: Container(
@@ -327,7 +302,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                           : weds = false;
                                       selectedWeekday(weds, 3);
                                     });
-                                    print(_selectedWeekdays);
+                                    print(selectedDays);
                                   },
                                 ),
                                 SizedBox(
@@ -344,7 +319,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                           : thurs = false;
                                       selectedWeekday(thurs, 4);
                                     });
-                                    print(_selectedWeekdays);
+                                    print(selectedDays);
                                   },
                                 ),
                                 SizedBox(
@@ -359,7 +334,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                       fri == false ? fri = true : fri = false;
                                       selectedWeekday(fri, 5);
                                     });
-                                    print(_selectedWeekdays);
+                                    print(selectedDays);
                                   },
                                 ),
                                 SizedBox(
@@ -380,7 +355,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                       sat == false ? sat = true : sat = false;
                                       selectedWeekday(sat, 6);
                                     });
-                                    print(_selectedWeekdays);
+                                    print(selectedDays);
                                   },
                                 ),
                                 SizedBox(
@@ -396,7 +371,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                       sun == false ? sun = true : sun = false;
                                       selectedWeekday(sun, 7);
                                     });
-                                    print(_selectedWeekdays);
+                                    print(selectedDays);
                                   },
                                 ),
                                 SizedBox(
@@ -573,7 +548,7 @@ class _SetupScreenState extends State<SetupScreen> {
                   child: GestureDetector(
                     onTap: () {
                       print('Reset Button');
-                      _selectedWeekdays.clear();
+                      selectedDays.clear();
                     },
                     child: Text(
                       'Reset',
