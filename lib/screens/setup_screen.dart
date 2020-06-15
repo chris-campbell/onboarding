@@ -10,11 +10,19 @@ import '../components/time_select.dart';
 import '../components/hour_select_button.dart';
 import '../components/round_days_button.dart';
 import 'package:sensors/sensors.dart';
-import 'package:android_alarm_manager/android_alarm_manager.dart';
 import 'package:onboardingtest/components/weekdays.dart';
 import 'package:onboardingtest/components/durationHours.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
+import 'package:onboardingtest/components/alarm_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Global [SharedPreferences] object.
+SharedPreferences prefs;
+
+/// The [SharedPreferences] key to access the alarm fire count.
+const String listenerActive = 'active';
 
 class SetupScreen extends StatefulWidget {
   static String id = 'setup_screen';
@@ -31,7 +39,7 @@ class _SetupScreenState extends State<SetupScreen> {
   final _firestore = Firestore.instance;
 
   // Movement listener stream
-  StreamSubscription<AccelerometerEvent> _streamSubscription;
+  StreamSubscription<UserAccelerometerEvent> _streamSubscription;
 
   // Scaffold global key
   GlobalKey<ScaffoldState> _scaffoldKeySetup = GlobalKey<ScaffoldState>();
@@ -86,6 +94,7 @@ class _SetupScreenState extends State<SetupScreen> {
         _movementData = (_x * _x + _y * _y + _z * _z);
       });
     });
+    print(_movementData);
     if (_movementData >= 2.0) {
       setState(() {
         _flagMovement = true;
@@ -134,10 +143,23 @@ class _SetupScreenState extends State<SetupScreen> {
     return mainTime;
   }
 
+  Future<bool> initSettings() async {
+    bool init = await AlarmManager.init(
+      exact: true,
+      alarmClock: true,
+      wakeup: true,
+    );
+    prefs = await SharedPreferences.getInstance();
+    if (!prefs.containsKey(listenerActive))
+      prefs.setBool(listenerActive, false);
+    return init;
+  }
+
   @override
   void initState() {
     super.initState();
-    getDisplayName();
+    initSettings();
+//    getDisplayName();
   }
 
   @override
@@ -145,8 +167,8 @@ class _SetupScreenState extends State<SetupScreen> {
     // Maintain port portrait
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-    // Duration of listening to movement
-    Duration time = Duration(hours: _runDuration);
+// Duration of listening to movement
+    Duration time = Duration(hours: 10);
 
     // Log detected movement
     movementLogger(time);
@@ -172,11 +194,11 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     GestureDetector(
                       onTap: () async {
-                        print(userGivenStartTime());
-                        print('fired!');
-                        await AndroidAlarmManager.oneShotAt(
-                            userGivenStartTime(), 0, test,
-                            wakeup: true);
+//                        print(userGivenStartTime());
+//                        print('fired!');
+//                        await AndroidAlarmManager.oneShotAt(
+//                            userGivenStartTime(), 0, test,
+//                            wakeup: true);
                       },
                       child: Container(
                         alignment: Alignment.centerRight,
@@ -534,12 +556,12 @@ class _SetupScreenState extends State<SetupScreen> {
                         fontSize: 17.0,
                       ),
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _switchOnOrOff == false
-                            ? _switchOnOrOff = true
-                            : _switchOnOrOff = false;
-                      });
+                    onPressed: () async {
+                      await AlarmManager.oneShotAt(
+                          userGivenStartTime(),
+                          Random().nextInt(pow(2, 31)),
+                          (int id) => activeListener(id),
+                          wakeup: true);
                     },
                   ),
                 ),
@@ -566,14 +588,29 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
-  void movementLogger(Duration time) {
+  int alarmId = 0;
+  activeListener(id) {
+    print(id);
+//    bool isActive = prefs.getBool(listenerActive);
+//    print(isActive);
+    setState(() {
+      _switchOnOrOff == false ? _switchOnOrOff = true : _switchOnOrOff = false;
+
+      alarmId = id;
+    });
+    print('this is alarm id $alarmId');
+  }
+
+  void movementLogger(Duration time) async {
     if (_switchOnOrOff == true) {
       movementListener();
       if (_flagMovement) {
         _firestore.collection('logs').add({"time": DateTime.now()});
+        print(DateTime.now());
         sleep(Duration(seconds: 6));
+
       }
-      Future.delayed(time, () {
+      await Future.delayed(time, () {
         setState(() {
           _switchOnOrOff = false;
         });

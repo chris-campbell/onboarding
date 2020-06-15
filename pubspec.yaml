@@ -38,6 +38,7 @@ dependencies:
   android_alarm_manager: ^0.4.5+11
   http: ^0.12.1
   android_intent: ^0.3.7+2
+  shared_preferences: ^0.5.7+3
 
 
 dev_dependencies:

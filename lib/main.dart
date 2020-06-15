@@ -11,7 +11,7 @@ import 'dart:isolate';
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  await AndroidAlarmManager.initialize();
+//  await AndroidAlarmManager.initialize();
   runApp(new MyApp());
 }
 
