@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:onboardingtest/screens/setup_screen.dart';
+import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'package:flutter/services.dart';
 import 'screens/login_screen.dart';
@@ -11,7 +12,6 @@ import 'dart:isolate';
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-//  await AndroidAlarmManager.initialize();
   runApp(new MyApp());
 }
 

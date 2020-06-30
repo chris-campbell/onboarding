@@ -17,12 +17,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:onboardingtest/components/alarm_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-/// Global [SharedPreferences] object.
-SharedPreferences prefs;
-
-/// The [SharedPreferences] key to access the alarm fire count.
-const String listenerActive = 'active';
+import 'package:move_to_background/move_to_background.dart';
 
 class SetupScreen extends StatefulWidget {
   static String id = 'setup_screen';
@@ -32,6 +27,8 @@ class SetupScreen extends StatefulWidget {
 }
 
 class _SetupScreenState extends State<SetupScreen> {
+  static const platform = const MethodChannel('com.example.onboarding');
+//  var _androidAppRetain = MethodChannel("android_app_retain");
   // Initialize Firebase Service
   FirebaseService _firebaseService = FirebaseService();
 
@@ -44,6 +41,9 @@ class _SetupScreenState extends State<SetupScreen> {
   // Scaffold global key
   GlobalKey<ScaffoldState> _scaffoldKeySetup = GlobalKey<ScaffoldState>();
 
+
+
+  int alarmId = 0;
   int _runDuration = 3;
   double _x, _y, _z;
   double _movementData = 0.0;
@@ -66,11 +66,11 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 
   // Retrieve user display name from Firebase
-  Future getDisplayName() async {
-    String displayName = await _firebaseService.getDisplayName();
-    print(displayName);
-    setState(() => _displayName = displayName);
-  }
+//  Future getDisplayName() async {
+//    String displayName = await _firebaseService.getDisplayName();
+//    print(displayName);
+//    setState(() => _displayName = displayName);
+//  }
 
   // Logout user from Firebase
   Future logoutUserFromFirebase() async {
@@ -90,20 +90,14 @@ class _SetupScreenState extends State<SetupScreen> {
       _x = event.x;
       _y = event.y;
       _z = event.z;
+
       setState(() {
         _movementData = (_x * _x + _y * _y + _z * _z);
       });
+
+      print(_movementData);
+
     });
-    print(_movementData);
-    if (_movementData >= 2.0) {
-      setState(() {
-        _flagMovement = true;
-      });
-    } else {
-      setState(() {
-        _flagMovement = false;
-      });
-    }
   }
 
   // Prevent user from going back to login screen
@@ -130,9 +124,34 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
-  static void test() {
-    DateTime time = DateTime.now();
-    print('$time #*#*#*#*#*#*#*#*#');
+  Future<bool> initSettings() async {
+    bool init = await AlarmManager.init(
+      exact: true,
+      alarmClock: true,
+      wakeup: true,
+    );
+    return init;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+//    getDisplayName();
+    initSettings();
+  }
+
+  Future<bool> backPress() {
+    if (Platform.isAndroid) {
+      if (Navigator.of(context).canPop()) {
+        return Future.value(true);
+      } else {
+//        _androidAppRetain.invokeMethod("sendToBackGround");
+        Navigator.pop(context);
+        return Future.value(false);
+      }
+    } else {
+      return Future.value(true);
+    }
   }
 
   // Format TimeOfDay with DateTime for alarm manager
@@ -143,23 +162,18 @@ class _SetupScreenState extends State<SetupScreen> {
     return mainTime;
   }
 
-  Future<bool> initSettings() async {
-    bool init = await AlarmManager.init(
-      exact: true,
-      alarmClock: true,
-      wakeup: true,
-    );
-    prefs = await SharedPreferences.getInstance();
-    if (!prefs.containsKey(listenerActive))
-      prefs.setBool(listenerActive, false);
-    return init;
-  }
+  Future<void> _getBatteryLevel() async {
+    String batteryLevel;
+    try {
+      final int result = await platform.invokeMethod('getBatteryLevel');
+      batteryLevel = 'Battery level at $result % .';
+    } on PlatformException catch (e) {
+      batteryLevel = "Failed to get battery level: '${e.message}'.";
+    }
 
-  @override
-  void initState() {
-    super.initState();
-    initSettings();
-//    getDisplayName();
+//    setState(() {
+//      _batteryLevel = batteryLevel;
+//    });
   }
 
   @override
@@ -168,13 +182,28 @@ class _SetupScreenState extends State<SetupScreen> {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
 // Duration of listening to movement
-    Duration time = Duration(hours: 10);
+    Duration time = Duration(hours: _runDuration);
 
     // Log detected movement
     movementLogger(time);
 
+    if (_movementData >= 2.0) {
+      setState(() {
+        _flagMovement = true;
+        print(true);
+      });
+    } else {
+      setState(() {
+        _flagMovement = false;
+        print(false);
+      });
+    }
+
     return WillPopScope(
-      onWillPop: _onBackPressed,
+      onWillPop: () async {
+        MoveToBackground.moveTaskToBack();
+        return false;
+      },
       child: Scaffold(
         key: _scaffoldKeySetup,
         backgroundColor: kPrimaryBlackGrey,
@@ -193,12 +222,8 @@ class _SetupScreenState extends State<SetupScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () async {
-//                        print(userGivenStartTime());
-//                        print('fired!');
-//                        await AndroidAlarmManager.oneShotAt(
-//                            userGivenStartTime(), 0, test,
-//                            wakeup: true);
+                      onTap: () {
+                        _getBatteryLevel();
                       },
                       child: Container(
                         alignment: Alignment.centerRight,
@@ -588,17 +613,11 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
-  int alarmId = 0;
   activeListener(id) {
-    print(id);
-//    bool isActive = prefs.getBool(listenerActive);
-//    print(isActive);
     setState(() {
-      _switchOnOrOff == false ? _switchOnOrOff = true : _switchOnOrOff = false;
-
       alarmId = id;
+      _switchOnOrOff == false ? _switchOnOrOff = true : _switchOnOrOff = false;
     });
-    print('this is alarm id $alarmId');
   }
 
   void movementLogger(Duration time) async {
@@ -608,7 +627,6 @@ class _SetupScreenState extends State<SetupScreen> {
         _firestore.collection('logs').add({"time": DateTime.now()});
         print(DateTime.now());
         sleep(Duration(seconds: 6));
-
       }
       await Future.delayed(time, () {
         setState(() {

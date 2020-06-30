@@ -1,4 +1,4 @@
-package com.example.onboardingtest
+package com.example.sensorexample
 
 import io.flutter.embedding.android.FlutterActivity
 
