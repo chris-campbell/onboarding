@@ -40,6 +40,7 @@ dependencies:
   android_intent: ^0.3.7+2
   shared_preferences: ^0.5.7+3
   move_to_background: ^1.0.1
+  path_provider: ^1.6.11
 
 
 dev_dependencies:

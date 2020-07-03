@@ -18,6 +18,7 @@ import 'dart:math';
 import 'package:onboardingtest/components/alarm_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:move_to_background/move_to_background.dart';
+import 'package:onboardingtest/components/log_reader.dart';
 
 class SetupScreen extends StatefulWidget {
   static String id = 'setup_screen';
@@ -41,7 +42,7 @@ class _SetupScreenState extends State<SetupScreen> {
   // Scaffold global key
   GlobalKey<ScaffoldState> _scaffoldKeySetup = GlobalKey<ScaffoldState>();
 
-
+  LogReader log = new LogReader();
 
   int alarmId = 0;
   int _runDuration = 3;
@@ -86,18 +87,26 @@ class _SetupScreenState extends State<SetupScreen> {
 
   // Listen for device movement
   void movementListener() {
-    userAccelerometerEvents.listen((UserAccelerometerEvent event) {
+    double movementData;
+    _streamSubscription = userAccelerometerEvents.listen((UserAccelerometerEvent event) {
       _x = event.x;
       _y = event.y;
       _z = event.z;
 
-      setState(() {
-        _movementData = (_x * _x + _y * _y + _z * _z);
-      });
+      movementData = (_x * _x + _y * _y + _z * _z);
+//      print(_streamSubscription);
+      if (movementData >= 10) {
+        log.writer(movementData);
+        _streamSubscription.pause();
 
-      print(_movementData);
 
+          print("Over 10");
+
+      }
+//      _streamSubscription.resume();
+      print(movementData);
     });
+//    sleep(Duration(seconds: 2));
   }
 
   // Prevent user from going back to login screen
@@ -223,7 +232,10 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        _getBatteryLevel();
+//                        print(_streamSubscription);
+                        _streamSubscription.pause();
+//                        log.reader();
+//                        _getBatteryLevel();
                       },
                       child: Container(
                         alignment: Alignment.centerRight,
@@ -595,7 +607,8 @@ class _SetupScreenState extends State<SetupScreen> {
                   child: GestureDetector(
                     onTap: () {
                       print('Reset Button');
-                      selectedDays.clear();
+//                      selectedDays.clear();
+                    _streamSubscription.resume();
                     },
                     child: Text(
                       'Reset',
@@ -623,17 +636,8 @@ class _SetupScreenState extends State<SetupScreen> {
   void movementLogger(Duration time) async {
     if (_switchOnOrOff == true) {
       movementListener();
-      if (_flagMovement) {
-        _firestore.collection('logs').add({"time": DateTime.now()});
-        print(DateTime.now());
-        sleep(Duration(seconds: 6));
-      }
-      await Future.delayed(time, () {
-        setState(() {
-          _switchOnOrOff = false;
-        });
-        _streamSubscription.cancel();
-      });
+      sleep(Duration(seconds: 3));
+//        _firestore.collection('logs').add({"time": DateTime.now()});
     }
   }
 }
