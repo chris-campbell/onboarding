@@ -44,6 +44,8 @@ class _SetupScreenState extends State<SetupScreen> {
 
   LogReader log = new LogReader();
 
+  List<double> movementList = new List();
+
   int alarmId = 0;
   int _runDuration = 3;
   double _x, _y, _z;
@@ -66,6 +68,13 @@ class _SetupScreenState extends State<SetupScreen> {
         : Text('no name');
   }
 
+  getAverage(list) {
+    var total = 0.0;
+    for (var num in list) {
+      total += num;
+    }
+    return total / list.length;
+  }
   // Retrieve user display name from Firebase
 //  Future getDisplayName() async {
 //    String displayName = await _firebaseService.getDisplayName();
@@ -85,9 +94,12 @@ class _SetupScreenState extends State<SetupScreen> {
     }
   }
 
+
+
   // Listen for device movement
   void movementListener() {
     double movementData;
+
     _streamSubscription = userAccelerometerEvents.listen((UserAccelerometerEvent event) {
       _x = event.x;
       _y = event.y;
@@ -96,17 +108,21 @@ class _SetupScreenState extends State<SetupScreen> {
       movementData = (_x * _x + _y * _y + _z * _z);
 //      print(_streamSubscription);
       if (movementData >= 10) {
-        log.writer(movementData);
-        _streamSubscription.pause();
-
-
-          print("Over 10");
-
+        movementList.add(movementData);
+      } else if (movementData < 1.0){
+        if (movementList.isNotEmpty) {
+          log.writer(getAverage(movementList));
+          print(getAverage(movementList));
+          movementList.clear();
+        }
       }
-//      _streamSubscription.resume();
       print(movementData);
+//      sleep(Duration(seconds: 10));
+//      _streamSubscription.resume();
+//      print("action resumed");
     });
-//    sleep(Duration(seconds: 2));
+//    movementData = 0.0;
+//    sleep(Duration(seconds: 6));
   }
 
   // Prevent user from going back to login screen
@@ -193,21 +209,6 @@ class _SetupScreenState extends State<SetupScreen> {
 // Duration of listening to movement
     Duration time = Duration(hours: _runDuration);
 
-    // Log detected movement
-    movementLogger(time);
-
-    if (_movementData >= 2.0) {
-      setState(() {
-        _flagMovement = true;
-        print(true);
-      });
-    } else {
-      setState(() {
-        _flagMovement = false;
-        print(false);
-      });
-    }
-
     return WillPopScope(
       onWillPop: () async {
         MoveToBackground.moveTaskToBack();
@@ -233,8 +234,10 @@ class _SetupScreenState extends State<SetupScreen> {
                     GestureDetector(
                       onTap: () {
 //                        print(_streamSubscription);
-                        _streamSubscription.pause();
-//                        log.reader();
+//                        _streamSubscription.pause();
+//                        print(movementList);
+
+                        log.reader();
 //                        _getBatteryLevel();
                       },
                       child: Container(
@@ -597,7 +600,7 @@ class _SetupScreenState extends State<SetupScreen> {
                       await AlarmManager.oneShotAt(
                           userGivenStartTime(),
                           Random().nextInt(pow(2, 31)),
-                          (int id) => activeListener(id),
+                          (int id) => movementListener(),
                           wakeup: true);
                     },
                   ),
@@ -624,20 +627,5 @@ class _SetupScreenState extends State<SetupScreen> {
         ),
       ),
     );
-  }
-
-  activeListener(id) {
-    setState(() {
-      alarmId = id;
-      _switchOnOrOff == false ? _switchOnOrOff = true : _switchOnOrOff = false;
-    });
-  }
-
-  void movementLogger(Duration time) async {
-    if (_switchOnOrOff == true) {
-      movementListener();
-      sleep(Duration(seconds: 3));
-//        _firestore.collection('logs').add({"time": DateTime.now()});
-    }
   }
 }
