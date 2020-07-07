@@ -18,18 +18,18 @@ public class MainActivity extends FlutterActivity {
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), CHANNEL)
                 .setMethodCallHandler(
                         (call, result) -> {
-                            if (call.method.equals("getBatteryLevel")) {
-                                noti();
+                            if (call.method.equals("sendtoforeground")) {
+                                startForegroundService();
                             }
                         }
                 );
     }
 
-    private void noti() {
+    private void startForegroundService() {
         String input = "hello";
         Intent intent = new Intent(this, ExampleService.class);
         intent.putExtra("input", input);
         startService(intent);
-        Toast.makeText(this, "This is a toast to Dixie", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Alarm set.", Toast.LENGTH_SHORT).show();
     }
 }

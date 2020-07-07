@@ -19,6 +19,8 @@ import 'package:onboardingtest/components/alarm_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:move_to_background/move_to_background.dart';
 import 'package:onboardingtest/components/log_reader.dart';
+import 'package:onboardingtest/components/log.dart';
+import 'package:path_provider/path_provider.dart';
 
 class SetupScreen extends StatefulWidget {
   static String id = 'setup_screen';
@@ -29,7 +31,7 @@ class SetupScreen extends StatefulWidget {
 
 class _SetupScreenState extends State<SetupScreen> {
   static const platform = const MethodChannel('com.example.onboarding');
-//  var _androidAppRetain = MethodChannel("android_app_retain");
+
   // Initialize Firebase Service
   FirebaseService _firebaseService = FirebaseService();
 
@@ -42,16 +44,13 @@ class _SetupScreenState extends State<SetupScreen> {
   // Scaffold global key
   GlobalKey<ScaffoldState> _scaffoldKeySetup = GlobalKey<ScaffoldState>();
 
-  LogReader log = new LogReader();
+  Log log = new Log();
 
   List<double> movementList = new List();
 
   int alarmId = 0;
   int _runDuration = 3;
   double _x, _y, _z;
-  double _movementData = 0.0;
-  bool _flagMovement = false;
-  bool _switchOnOrOff = false;
   String _displayName = '';
 
   // Display username
@@ -68,19 +67,13 @@ class _SetupScreenState extends State<SetupScreen> {
         : Text('no name');
   }
 
-  getAverage(list) {
+  double getAverage(list) {
     var total = 0.0;
     for (var num in list) {
       total += num;
     }
     return total / list.length;
   }
-  // Retrieve user display name from Firebase
-//  Future getDisplayName() async {
-//    String displayName = await _firebaseService.getDisplayName();
-//    print(displayName);
-//    setState(() => _displayName = displayName);
-//  }
 
   // Logout user from Firebase
   Future logoutUserFromFirebase() async {
@@ -94,8 +87,6 @@ class _SetupScreenState extends State<SetupScreen> {
     }
   }
 
-
-
   // Listen for device movement
   void movementListener() {
     double movementData;
@@ -106,23 +97,23 @@ class _SetupScreenState extends State<SetupScreen> {
       _z = event.z;
 
       movementData = (_x * _x + _y * _y + _z * _z);
-//      print(_streamSubscription);
       if (movementData >= 10) {
         movementList.add(movementData);
       } else if (movementData < 1.0){
         if (movementList.isNotEmpty) {
-          log.writer(getAverage(movementList));
+
+          var content = {
+            'average_movement_data': movementData,
+            'timestamp': DateTime.now()
+          };
+
+          log.writeLogsToFile(content);
           print(getAverage(movementList));
           movementList.clear();
         }
       }
       print(movementData);
-//      sleep(Duration(seconds: 10));
-//      _streamSubscription.resume();
-//      print("action resumed");
     });
-//    movementData = 0.0;
-//    sleep(Duration(seconds: 6));
   }
 
   // Prevent user from going back to login screen
@@ -141,7 +132,8 @@ class _SetupScreenState extends State<SetupScreen> {
           FlatButton(
             child: Text('Yes'),
             onPressed: () {
-              logoutUserFromFirebase();
+              _sendToForeground();
+             SystemNavigator.pop();
             },
           ),
         ],
@@ -161,22 +153,7 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   void initState() {
     super.initState();
-//    getDisplayName();
     initSettings();
-  }
-
-  Future<bool> backPress() {
-    if (Platform.isAndroid) {
-      if (Navigator.of(context).canPop()) {
-        return Future.value(true);
-      } else {
-//        _androidAppRetain.invokeMethod("sendToBackGround");
-        Navigator.pop(context);
-        return Future.value(false);
-      }
-    } else {
-      return Future.value(true);
-    }
   }
 
   // Format TimeOfDay with DateTime for alarm manager
@@ -187,18 +164,12 @@ class _SetupScreenState extends State<SetupScreen> {
     return mainTime;
   }
 
-  Future<void> _getBatteryLevel() async {
-    String batteryLevel;
+  Future<void> _sendToForeground() async {
     try {
-      final int result = await platform.invokeMethod('getBatteryLevel');
-      batteryLevel = 'Battery level at $result % .';
+      await platform.invokeMethod('sendtoforeground');
     } on PlatformException catch (e) {
-      batteryLevel = "Failed to get battery level: '${e.message}'.";
+      print('Failed to send application to foreground.');
     }
-
-//    setState(() {
-//      _batteryLevel = batteryLevel;
-//    });
   }
 
   @override
@@ -211,7 +182,7 @@ class _SetupScreenState extends State<SetupScreen> {
 
     return WillPopScope(
       onWillPop: () async {
-        MoveToBackground.moveTaskToBack();
+        _onBackPressed();
         return false;
       },
       child: Scaffold(
@@ -233,12 +204,8 @@ class _SetupScreenState extends State<SetupScreen> {
                     ),
                     GestureDetector(
                       onTap: () {
-//                        print(_streamSubscription);
-//                        _streamSubscription.pause();
-//                        print(movementList);
-
-                        log.reader();
-//                        _getBatteryLevel();
+//                          log.writer("hello");
+//                          _sendToForeground();
                       },
                       child: Container(
                         alignment: Alignment.centerRight,
@@ -331,6 +298,7 @@ class _SetupScreenState extends State<SetupScreen> {
                                       mon == false ? mon = true : mon = false;
                                       selectedWeekday(mon, 1);
                                     });
+
                                   },
                                 ),
                                 SizedBox(
@@ -611,7 +579,8 @@ class _SetupScreenState extends State<SetupScreen> {
                     onTap: () {
                       print('Reset Button');
 //                      selectedDays.clear();
-                    _streamSubscription.resume();
+
+//                    _streamSubscription.resume();
                     },
                     child: Text(
                       'Reset',
