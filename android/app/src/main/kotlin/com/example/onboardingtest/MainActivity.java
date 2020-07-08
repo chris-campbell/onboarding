@@ -20,6 +20,8 @@ public class MainActivity extends FlutterActivity {
                         (call, result) -> {
                             if (call.method.equals("sendtoforeground")) {
                                 startForegroundService();
+                            } else if (call.method.equals("gotohomescreen")) {
+                                goToHomeScreen();
                             }
                         }
                 );
@@ -31,5 +33,11 @@ public class MainActivity extends FlutterActivity {
         intent.putExtra("input", input);
         startService(intent);
         Toast.makeText(this, "Alarm set.", Toast.LENGTH_SHORT).show();
+    }
+
+    private void goToHomeScreen() {
+        Intent i = new Intent(Intent.ACTION_MAIN);
+        i.addCategory(Intent.CATEGORY_HOME);
+        startActivity(i);
     }
 }

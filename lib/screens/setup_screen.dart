@@ -103,12 +103,11 @@ class _SetupScreenState extends State<SetupScreen> {
         if (movementList.isNotEmpty) {
 
           var content = {
-            'average_movement_data': movementData,
+            'average_movement_data': getAverage(movementList),
             'timestamp': DateTime.now()
           };
-
-          log.writeLogsToFile(content);
-          print(getAverage(movementList));
+          print(movementList);
+          _firestore.collection("logs").add(content);
           movementList.clear();
         }
       }
@@ -133,7 +132,8 @@ class _SetupScreenState extends State<SetupScreen> {
             child: Text('Yes'),
             onPressed: () {
               _sendToForeground();
-             SystemNavigator.pop();
+              goToHomeScreen();
+//             SystemNavigator.pop();
             },
           ),
         ],
@@ -162,6 +162,10 @@ class _SetupScreenState extends State<SetupScreen> {
     final n = DateTime.now();
     DateTime mainTime = DateTime(n.year, n.month, n.day, t.hour, t.minute);
     return mainTime;
+  }
+
+  goToHomeScreen() async {
+    await platform.invokeMethod('gotohomescreen');
   }
 
   Future<void> _sendToForeground() async {
